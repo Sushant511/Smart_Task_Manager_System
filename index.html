@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Smart Task Manager</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #4e73df, #1cc88a);
+            text-align: center;
+            margin: 0;
+            padding: 0;
+        }
+
+        h1 {
+            color: white;
+            margin-top: 20px;
+        }
+
+        #clock {
+            color: white;
+            font-size: 18px;
+        }
+
+        .container {
+            background: white;
+            width: 420px;
+            margin: 30px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0px 0px 15px rgba(0,0,0,0.3);
+        }
+
+        input, button, select {
+            padding: 8px;
+            margin: 5px;
+        }
+
+        input[type="text"] {
+            width: 60%;
+        }
+
+        ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        li {
+            background: #f8f9fc;
+            margin: 8px 0;
+            padding: 10px;
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .completed {
+            text-decoration: line-through;
+            color: gray;
+        }
+
+        .overdue {
+            color: red;
+            font-weight: bold;
+        }
+
+        .task-info {
+            text-align: left;
+        }
+
+        .delete-btn {
+            background: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+            padding: 5px 8px;
+            border-radius: 4px;
+        }
+
+        .delete-btn:hover {
+            background: darkred;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>Smart Task Manager</h1>
+<div id="clock"></div>
+
+<div class="container">
+
+    <input type="text" id="taskInput" placeholder="Enter Task">
+    <input type="date" id="dueDate">
+    <button onclick="addTask()">Add</button>
+
+    <br>
+
+    <select onchange="filterTasks(this.value)">
+        <option value="all">All Tasks</option>
+        <option value="completed">Completed</option>
+        <option value="pending">Pending</option>
+    </select>
+
+    <h3>Total Tasks: <span id="taskCount">0</span></h3>
+
+    <ul id="taskList"></ul>
+
+</div>
+
+<script>
+
+// Live Clock
+setInterval(() => {
+    document.getElementById("clock").innerText =
+        "Current Date & Time: " + new Date().toLocaleString();
+}, 1000);
+
+// Load tasks when page loads
+window.onload = loadTasks;
+
+function addTask() {
+    let text = document.getElementById("taskInput").value;
+    let date = document.getElementById("dueDate").value;
+
+    if (text === "") {
+        alert("Please enter a task!");
+        return;
+    }
+
+    let task = {
+        text: text,
+        date: date,
+        completed: false
+    };
+
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    tasks.push(task);
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+
+    document.getElementById("taskInput").value = "";
+    document.getElementById("dueDate").value = "";
+
+    loadTasks();
+}
+
+function loadTasks() {
+    let taskList = document.getElementById("taskList");
+    taskList.innerHTML = "";
+
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+
+    tasks.forEach((task, index) => {
+        let li = document.createElement("li");
+
+        let div = document.createElement("div");
+        div.className = "task-info";
+
+        let taskText = document.createElement("span");
+        taskText.innerText = task.text;
+
+        if (task.completed) taskText.classList.add("completed");
+
+        taskText.onclick = () => toggleTask(index);
+
+        div.appendChild(taskText);
+
+        if (task.date) {
+            let due = document.createElement("div");
+            due.innerText = "Due: " + task.date;
+
+            let today = new Date().toISOString().split("T")[0];
+            if (task.date < today && !task.completed) {
+                due.classList.add("overdue");
+                due.innerText += " (Overdue)";
+            }
+
+            div.appendChild(due);
+        }
+
+        let delBtn = document.createElement("button");
+        delBtn.innerText = "Delete";
+        delBtn.className = "delete-btn";
+        delBtn.onclick = () => deleteTask(index);
+
+        li.appendChild(div);
+        li.appendChild(delBtn);
+
+        taskList.appendChild(li);
+    });
+
+    document.getElementById("taskCount").innerText = tasks.length;
+}
+
+function toggleTask(index) {
+    let tasks = JSON.parse(localStorage.getItem("tasks"));
+    tasks[index].completed = !tasks[index].completed;
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    loadTasks();
+}
+
+function deleteTask(index) {
+    let tasks = JSON.parse(localStorage.getItem("tasks"));
+    tasks.splice(index, 1);
+    localStorage.setItem("tasks", JSON.stringify(tasks));
+    loadTasks();
+}
+
+function filterTasks(type) {
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    let filtered = [];
+
+    if (type === "completed")
+        filtered = tasks.filter(task => task.completed);
+    else if (type === "pending")
+        filtered = tasks.filter(task => !task.completed);
+    else
+        filtered = tasks;
+
+    let taskList = document.getElementById("taskList");
+    taskList.innerHTML = "";
+
+    filtered.forEach((task, index) => {
+        let li = document.createElement("li");
+        li.innerText = task.text + (task.date ? " (Due: " + task.date + ")" : "");
+        taskList.appendChild(li);
+    });
+}
+
+</script>
+
+</body>
+</html>
+ 
